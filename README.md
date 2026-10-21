@@ -1,5 +1,7 @@
 # 识屏答题助手（ScreenAnswer）v1.3.0
 
+[![Build debug APK](https://github.com/pgyz710/ScreenAnswer/actions/workflows/build-apk.yml/badge.svg)](https://github.com/pgyz710/ScreenAnswer/actions/workflows/build-apk.yml)
+
 一个 Android 悬浮窗小工具：点一下悬浮球，自动读取当前屏幕、在本地识别文字，再调用 DeepSeek 生成答案。**答案直接显示在悬浮球旁边**，想看解析再点一下悬浮球打开弹窗。
 
 > **v1.1.0 起不再使用屏幕共享 / 录屏（MediaProjection）**，改为通过 Android 无障碍服务的截图能力读取屏幕，不会出现系统「开始共享屏幕」的确认框，也没有持续录屏提示。
