@@ -18,11 +18,13 @@ jobs:
           distribution: temurin
           java-version: "17"
 
-      - name: Set up Android SDK
-        uses: android-actions/setup-android@v3
+      - name: Accept Android SDK licenses
+        run: yes | "${ANDROID_HOME}/cmdline-tools/latest/bin/sdkmanager" --licenses > /dev/null || true
 
       - name: Install Android SDK packages
-        run: sdkmanager "platform-tools" "platforms;android-36" "build-tools;36.1.0"
+        run: |
+          "${ANDROID_HOME}/cmdline-tools/latest/bin/sdkmanager" \
+            "platform-tools" "platforms;android-36" "build-tools;36.1.0"
 
       - name: Grant execute permission
         run: chmod +x gradlew
