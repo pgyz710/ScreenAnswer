@@ -8,6 +8,17 @@
 >
 > 截图只在手机本地做 OCR，不会上传；只有识别出的文字会发送给 DeepSeek。
 
+## 界面
+
+| 答案直接显示在悬浮球旁 | 点一下球查看「答案 · 解析」 |
+| --- | --- |
+| ![答案显示在悬浮球旁](docs/answer-on-bubble.png) | ![答案与解析弹窗](docs/explanation-panel.png) |
+
+## 下载 / 安装
+
+- 最新安装包：[Releases · v1.3.0](https://github.com/pgyz710/ScreenAnswer/releases/tag/v1.3.0)
+- 自己构建：[GitHub Actions](https://github.com/pgyz710/ScreenAnswer/actions/workflows/build-apk.yml) 的 Artifacts，或本地 `./gradlew assembleDebug`
+
 ## v1.3.0 更新
 
 - **答案和解析分开**：DeepSeek 按「答案：」「解析：」两段输出，App 自动拆开。
@@ -97,8 +108,8 @@ Android 11 及以上提供 `AccessibilityService.takeScreenshot()`：在用户�
 
 仓库不提交编译产物（APK 约 56 MB）。有三种方式拿到安装包：
 
-1. **GitHub Actions**：推送到 `main`/`master` 后，在仓库的 **Actions → Build debug APK → Artifacts** 里下载 `ScreenAnswer-debug`。
-2. **Releases**：如果仓库发布了 Release，可直接下载其中的 `ScreenAnswer-v1.3.0-debug.apk`。
+1. **Releases**：直接下载 [ScreenAnswer-v1.3.0-debug.apk](https://github.com/pgyz710/ScreenAnswer/releases/download/v1.3.0/ScreenAnswer-v1.3.0-debug.apk)。
+2. **GitHub Actions**：推送到 `main`/`master` 后，在仓库的 [Actions](https://github.com/pgyz710/ScreenAnswer/actions/workflows/build-apk.yml) →「Build debug APK」→ Artifacts 里下载 `ScreenAnswer-debug`。
 3. **本地构建**：按下面的命令编译，产物在 `app/build/outputs/apk/debug/app-debug.apk`。
 
 > 覆盖安装需要同一个签名。仓库里的 APK 由构建机的 `~/.android/debug.keystore` 自动签名：换电脑或换 CI 后签名会变，安装前需要先卸载旧版本（API Key 等本地配置也会一起清掉）。
