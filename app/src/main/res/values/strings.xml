@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">识屏答题助手</string>
+    <string name="tagline">DeepSeek 驱动 · 无屏幕共享</string>
+    <string name="header_title">识屏答题助手</string>
+    <string name="header_subtitle">点一下悬浮球，自动读取屏幕上的题目，答案直接显示在浮窗里。不需要屏幕共享或录屏。</string>
+
+    <string name="section_config">连接 DeepSeek</string>
+    <string name="section_config_desc">填写 Key，选择模型</string>
+    <string name="api_key_hint">DeepSeek API Key</string>
+    <string name="api_key_helper">在 platform.deepseek.com 创建，仅保存在本机</string>
+    <string name="model_label">模型</string>
+    <string name="model_chat">deepseek-chat</string>
+    <string name="model_reasoner">deepseek-reasoner</string>
+    <string name="model_hint">chat 响应更快；reasoner 更擅长数学与推理题，耗时略长</string>
+    <string name="advanced">高级设置</string>
+    <string name="base_url_hint">API Base URL</string>
+    <string name="base_url_helper">默认 https://api.deepseek.com，可改为兼容接口地址</string>
+
+    <string name="section_start">开启悬浮球</string>
+    <string name="section_start_desc">悬浮窗 + 无障碍服务，不使用屏幕共享</string>
+    <string name="overlay_permission">悬浮窗权限</string>
+    <string name="accessibility_permission">无障碍服务（截图）</string>
+    <string name="api_state_label">API Key 状态</string>
+    <string name="service_state_label">悬浮球服务</string>
+    <string name="authorized">已授权</string>
+    <string name="not_authorized">未授权</string>
+    <string name="enabled">已开启</string>
+    <string name="disabled">未开启</string>
+    <string name="connecting">正在连接…</string>
+    <string name="configured">已配置</string>
+    <string name="not_configured">未配置</string>
+    <string name="running">运行中</string>
+    <string name="not_running">未运行</string>
+    <string name="start_button">开启悬浮球</string>
+    <string name="status_hint">点「无障碍服务」这一行可直接打开系统开关；首次开启需要允许悬浮窗和无障碍（无需屏幕共享）</string>
+    <string name="stop_button">停止悬浮窗</string>
+
+    <string name="section_usage">使用方式</string>
+    <string name="usage_steps">1. 填入 API Key。\n2. 点「开启悬浮球」，允许悬浮窗权限。\n3. 点「无障碍服务」这一行，开启「识屏答题助手」。\n4. 回到任意 App，点击蓝色悬浮球：答案会直接显示在球旁边。\n5. 想看解析，再点一下悬浮球打开弹窗；长按悬浮球可重新识屏，双击隐藏。\n6. 本版本不调用屏幕共享，截图只在本机做 OCR。</string>
+    <string name="privacy_note">本版本不使用系统屏幕共享或录屏；通过无障碍服务在本机读取屏幕并做文字识别。截图和识别结果不会上传，只有识别出的文字会发送给 DeepSeek 生成答案。API Key 仅保存在本机。</string>
+    <string name="version_label">v1.3.0 · 答案在球上，解析看弹窗</string>
+
+    <string name="accessibility_service_label">识屏答题助手</string>
+    <string name="accessibility_service_description">用于在本地读取屏幕并识别题目。截图不会上传，也不会开启屏幕共享或录屏。</string>
+    <string name="accessibility_guide_title">开启无障碍服务</string>
+    <string name="accessibility_guide_message">本版本不使用屏幕共享或录屏。\n\n请到 设置 → 无障碍 → 已下载的应用（或“已安装的服务”）→ 识屏答题助手，打开开关。\n\n如果每次打开都要重开：在应用信息右上角允许「受限制的设置」，并把省电策略设为「无限制」、允许自启动。\n\n开启后回到 App，再点「开启悬浮球」。</string>
+    <string name="go_settings">去设置</string>
+    <string name="cancel">取消</string>
+
+    <string name="answer_title">答案 · 解析</string>
+    <string name="answer_pill_label">答案</string>
+    <string name="status_preparing">准备中</string>
+    <string name="copy">复制</string>
+    <string name="retry">重答</string>
+    <string name="rescan">重扫</string>
+    <string name="show_ocr">查看识屏文字</string>
+    <string name="hide_ocr">收起识屏文字</string>
+    <string name="close">关闭</string>
+</resources>
