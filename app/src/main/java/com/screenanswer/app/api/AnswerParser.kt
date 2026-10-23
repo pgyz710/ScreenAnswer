@@ -28,14 +28,16 @@ object AnswerParser {
         Regex("""【\s*(?:最终)?答案\s*】\s*[:：]?\s*"""),
         Regex("""\[\s*(?:最终)?答案\s*\]\s*[:：]?\s*"""),
         Regex("""(?m)^\s*(?:最终)?答案\s*[:：]\s*"""),
-        Regex("""(?:最终)?答案\s*[:：]\s*""")
+        Regex("""(?:最终)?答案\s*[:：]\s*"""),
+        Regex("""(?im)^\s*(?:final\s+)?answers?\s*[:：]\s*""")
     )
 
     private val EXPLANATION_MARKERS = listOf(
         Regex("""【\s*(?:解析|解题思路|详解|Explanation)\s*】\s*[:：]?\s*""", RegexOption.IGNORE_CASE),
         Regex("""\[\s*(?:解析|解题思路|详解|Explanation)\s*\]\s*[:：]?\s*""", RegexOption.IGNORE_CASE),
         Regex("""(?m)^\s*(?:解析|解题思路|详解|Explanation)\s*[:：]\s*""", RegexOption.IGNORE_CASE),
-        Regex("""(?:解析|解题思路|详解)\s*[:：]\s*""")
+        Regex("""(?:解析|解题思路|详解)\s*[:：]\s*"""),
+        Regex("""(?im)^\s*(?:explanation|reasoning)\s*[:：]\s*""")
     )
 
     private val headingPrefix = Regex("""^#{1,6}\s*""")

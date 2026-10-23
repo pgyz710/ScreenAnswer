@@ -7,12 +7,15 @@ import android.app.PendingIntent
 import android.app.Service
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.content.pm.ServiceInfo
 import android.content.res.Configuration
 import android.graphics.Bitmap
+import android.Manifest
 import android.os.Build
 import android.os.IBinder
 import android.provider.Settings
+import android.speech.SpeechRecognizer
 import android.widget.Toast
 import androidx.core.app.NotificationCompat
 import androidx.core.content.ContextCompat
@@ -25,6 +28,7 @@ import com.screenanswer.app.api.DeepSeekClient
 import com.screenanswer.app.data.Prefs
 import com.screenanswer.app.ocr.ScreenOcr
 import com.screenanswer.app.overlay.OverlayController
+import com.screenanswer.app.speech.SpeechInput
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -37,6 +41,7 @@ import java.io.IOException
 import java.net.ConnectException
 import java.net.SocketTimeoutException
 import java.net.UnknownHostException
+import java.util.Locale
 
 /**
  * Floating-ball foreground service. Screen frames come from the accessibility service
@@ -58,6 +63,9 @@ class ScreenAnswerService : Service(), OverlayController.Listener {
 
     /** OCR text for each captured screen, in order. Cleared when a fresh scan starts. */
     private val pages = mutableListOf<String>()
+
+    private var speech: SpeechInput? = null
+    private var listening = false
 
     override fun onCreate() {
         super.onCreate()
@@ -110,6 +118,7 @@ class ScreenAnswerService : Service(), OverlayController.Listener {
 
     override fun onScanRequested() {
         if (released) return
+        if (listening) stopListening()
         if (isWorking) {
             Toast.makeText(this, "正在识屏，请稍候…", Toast.LENGTH_SHORT).show()
             return
@@ -134,6 +143,94 @@ class ScreenAnswerService : Service(), OverlayController.Listener {
         if (!checkConfig()) return
         val reader = connectedReader() ?: return
         captureAndAnswer(reader, append = true)
+    }
+
+    override fun onListenRequested() {
+        if (released) return
+        if (listening) {
+            stopListening()
+            return
+        }
+        if (isWorking) {
+            Toast.makeText(this, "正在识屏，请稍候…", Toast.LENGTH_SHORT).show()
+            return
+        }
+        if (ContextCompat.checkSelfPermission(
+                this,
+                Manifest.permission.RECORD_AUDIO
+            ) != PackageManager.PERMISSION_GRANTED
+        ) {
+            overlay.showError(getString(R.string.listen_permission), allowRetry = pages.isNotEmpty())
+            return
+        }
+        val input = SpeechInput(this)
+        if (!input.isAvailable()) {
+            overlay.showError(
+                getString(R.string.listen_unavailable),
+                allowRetry = pages.isNotEmpty()
+            )
+            return
+        }
+        speech = input
+        listening = true
+        overlay.setListening(true)
+
+        input.onPartial = { text ->
+            if (listening) overlay.setListening(true, text)
+        }
+        input.onFinal = { text ->
+            listening = false
+            overlay.setListening(false)
+            speech?.stop()
+            speech = null
+            if (text.isBlank()) {
+                overlay.showInfo(getString(R.string.listen_empty), allowRetry = pages.isNotEmpty())
+            } else {
+                appendSpeech(text)
+            }
+        }
+        input.onFailure = { code ->
+            listening = false
+            speech?.stop()
+            speech = null
+            overlay.setListening(false)
+            overlay.showError(speechErrorMessage(code), allowRetry = pages.isNotEmpty())
+        }
+        input.start(if (prefs.englishMode) "en-US" else Locale.getDefault().toLanguageTag())
+    }
+
+    private fun stopListening() {
+        listening = false
+        speech?.stop()
+        speech = null
+        overlay.setListening(false)
+    }
+
+    /** Speech is treated as one more "page" so it can be combined with OCR pages. */
+    private fun appendSpeech(text: String) {
+        pages.add(text)
+        beginWork()
+        answerJob = scope.launch {
+            try {
+                askDeepSeek()
+            } catch (cancel: CancellationException) {
+                throw cancel
+            } catch (t: Throwable) {
+                overlay.showError(friendlyMessage(t), allowRetry = true)
+            } finally {
+                endWork()
+            }
+        }
+    }
+
+    private fun speechErrorMessage(code: Int): String = when (code) {
+        SpeechRecognizer.ERROR_NO_MATCH,
+        SpeechRecognizer.ERROR_SPEECH_TIMEOUT -> "没有听到内容，请再说一次"
+        SpeechRecognizer.ERROR_INSUFFICIENT_PERMISSIONS -> getString(R.string.listen_permission)
+        SpeechRecognizer.ERROR_NETWORK,
+        SpeechRecognizer.ERROR_NETWORK_TIMEOUT -> "语音识别网络错误，请重试"
+        SpeechRecognizer.ERROR_RECOGNIZER_BUSY -> "识别服务忙，请稍后再试"
+        else -> "语音识别失败（错误码 $code）"
     }
 
     private fun checkConfig(): Boolean {
@@ -174,7 +271,7 @@ class ScreenAnswerService : Service(), OverlayController.Listener {
                 overlay.restoreAfterCapture()
                 overlay.showOcrStage()
 
-                val text = ocr.recognize(bitmap).trim()
+                val text = ocr.recognize(bitmap, prefs.englishMode).trim()
                 bitmap.recycle()
                 bitmap = null
 
@@ -231,6 +328,7 @@ class ScreenAnswerService : Service(), OverlayController.Listener {
 
     override fun onHideBubble() {
         if (released) return
+        if (listening) stopListening()
         answerJob?.cancel()
         overlay.hideBubble()
         isBubbleHidden = true
@@ -243,7 +341,7 @@ class ScreenAnswerService : Service(), OverlayController.Listener {
         overlay.showThinking(preview = pages.lastOrNull().orEmpty(), fullOcr = joined)
 
         val buffer = StringBuilder()
-        client.streamAnswer(clipped).collect { delta ->
+        client.streamAnswer(clipped, prefs.englishMode).collect { delta ->
             buffer.append(delta)
             val partial = AnswerParser.parse(buffer.toString(), fallbackToWhole = false)
             overlay.updateStreaming(buffer.toString(), partial.answer)
@@ -299,6 +397,9 @@ class ScreenAnswerService : Service(), OverlayController.Listener {
     override fun onDestroy() {
         released = true
         isBubbleHidden = false
+        listening = false
+        speech?.stop()
+        speech = null
         answerJob?.cancel()
         answerJob = null
         if (::overlay.isInitialized) runCatching { overlay.release() }

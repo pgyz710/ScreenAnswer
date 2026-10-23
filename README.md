@@ -1,8 +1,8 @@
-# 识屏答题助手（ScreenAnswer）v1.4.0
+# 识屏答题助手（ScreenAnswer）v1.5.0
 
 [![Build debug APK](https://github.com/pgyz710/ScreenAnswer/actions/workflows/build-apk.yml/badge.svg)](https://github.com/pgyz710/ScreenAnswer/actions/workflows/build-apk.yml)
 
-一个 Android 悬浮窗小工具：点一下悬浮球，自动读取当前屏幕、在本地识别文字，再调用 DeepSeek 生成答案。**答案直接显示在悬浮球旁边**，想看解析再点一下悬浮球打开弹窗。试卷有多页时可以逐页收集，最后一起来作答。
+一个 Android 悬浮窗小工具：点一下悬浮球，自动读取当前屏幕、在本地识别文字，再调用 DeepSeek 生成答案。**答案直接显示在悬浮球旁边**，想看解析再点一下悬浮球打开弹窗。支持多页试卷、英语模式和「听一段」语音输入。
 
 > **v1.1.0 起不再使用屏幕共享 / 录屏（MediaProjection）**，改为通过 Android 无障碍服务的截图能力读取屏幕，不会出现系统「开始共享屏幕」的确认框，也没有持续录屏提示。
 >
@@ -16,8 +16,18 @@
 
 ## 下载 / 安装
 
-- 最新安装包：[Releases · v1.4.0](https://github.com/pgyz710/ScreenAnswer/releases/tag/v1.4.0)
+- 最新安装包：[Releases · v1.5.0](https://github.com/pgyz710/ScreenAnswer/releases/tag/v1.5.0)
 - 自己构建：[GitHub Actions](https://github.com/pgyz710/ScreenAnswer/actions/workflows/build-apk.yml) 的 Artifacts，或本地 `./gradlew assembleDebug`
+
+## v1.5.0 更新
+
+- **英语模式**：App 首页的「识别语言」选 **English**。
+  - 使用 ML Kit 拉丁 OCR 模型（以前只有中文模型，英文单词和选项字母容易认错）；
+  - 提示词切换为英语版本，要求逐题核对选项字母，不允许编造选项；
+  - 语音「听一段」也会用英文识别（en-US）。
+- **两栏排版修复**：自动检测页面中间的白缝，把左右两栏切开分别 OCR，再按「左栏从上到下、右栏从上到下」拼接。以前两栏英语卷的同一行会被合成一行，题目和选项全串位。
+- **「听一段」语音输入**：面板里新增按钮，用 Android 系统语音识别（不需要额外 Key），说完把识别文字作为一页参与作答。依赖手机自带的识别服务；如果提示网络错误/不可用，可以改用系统「实时字幕」或等后续接云转写。
+- 英语模式下 `deepseek-reasoner` 通常比 `deepseek-chat` 更适合阅读理解和完形填空。
 
 ## v1.4.0 更新
 
@@ -76,6 +86,8 @@ DeepSeek 只接收文字，App 本身不能“听”音频。可行的做法是�
 - **答案在球上**：答案以一个小气泡贴在悬浮球旁边显示，最多 4 行；识屏和思考进度也在这里。
 - **解析看弹窗**：点悬浮球才展开「答案 · 解析」弹窗，再点一下收起；支持复制、重答、重扫、查看识屏原文。
 - **多页试卷**：弹窗里点「加一页」，翻页后点球继续扫，App 会把多页拼起来一起作答，状态显示共几页。
+- **英语模式**：首页「识别语言」选 English，使用拉丁 OCR 模型 + 英语提示词；两栏试卷会自动按左右栏切开识别。
+- **听一段**：用系统语音识别把听到的内容加进本题，不需要额外 Key。
 - **隐藏与恢复**：双击悬浮球隐藏图标和答案气泡；通知栏「显示悬浮球」或 App 内按钮恢复。
 - **无屏幕共享**：通过无障碍服务截图，不需要 MediaProjection，不会弹出屏幕共享/录屏授权。
 - **屏幕识别**：ML Kit 中文 OCR 离线识别（内置模型，不依赖 Google Play 服务）。
@@ -131,7 +143,7 @@ Android 11 及以上提供 `AccessibilityService.takeScreenshot()`：在用户�
 
 仓库不提交编译产物（APK 约 56 MB）。有三种方式拿到安装包：
 
-1. **Releases**：直接下载 [ScreenAnswer-v1.4.0-debug.apk](https://github.com/pgyz710/ScreenAnswer/releases/download/v1.4.0/ScreenAnswer-v1.4.0-debug.apk)。
+1. **Releases**：直接下载 [ScreenAnswer-v1.5.0-debug.apk](https://github.com/pgyz710/ScreenAnswer/releases/download/v1.5.0/ScreenAnswer-v1.5.0-debug.apk)。
 2. **GitHub Actions**：推送到 `main`/`master` 后，在仓库的 [Actions](https://github.com/pgyz710/ScreenAnswer/actions/workflows/build-apk.yml) →「Build debug APK」→ Artifacts 里下载 `ScreenAnswer-debug`。
 3. **本地构建**：按下面的命令编译，产物在 `app/build/outputs/apk/debug/app-debug.apk`。
 
@@ -166,7 +178,8 @@ app/build/outputs/apk/debug/app-debug.apk
 ## 使用步骤
 
 1. 打开 App，填入 DeepSeek API Key（在 <https://platform.deepseek.com> 创建），按需选择模型。
-2. 允许「显示在其他应用上层」。
+2. 按需选择「识别语言」：中文卷选中文，**英语卷选 English**（会换用英文 OCR 模型和英语提示词）。
+3. 允许「显示在其他应用上层」。
 3. **开启无障碍服务**：点「开启悬浮球」时如果没开启，会弹出引导。到：
    `设置 → 无障碍 → 已下载的应用（部分系统叫「已安装的服务」）→ 识屏答题助手`，打开开关。
    如果系统提示「受限制的设置」，先到 `设置 → 应用管理 → 识屏答题助手 → 右上角 ⋮ → 允许受限制的设置`，再回来开启无障碍。
@@ -185,6 +198,7 @@ app/build/outputs/apk/debug/app-debug.apk
 - 气泡只显示最终答案（最多 4 行），不挡屏幕；
 - 弹窗里是「【答案】+【解析】」完整内容；
 - 「加一页」把当前屏幕追加到已收集的页；
+- 「听一段」启动系统语音识别，把听到的内容作为一页加进本题（需要麦克风权限）；
 - 「复制」复制完整答案和解析；
 - 「重答」用已收集的全部文字重新请求；
 - 「重扫」清空重来，重新读取当前屏幕；
@@ -229,6 +243,12 @@ v1.4.0 起支持逐页收集：扫完第 1 页后打开弹窗点「加一页」�
 
 **Q：听力题怎么办？**  
 App 只处理文字，不能直接“听”音频。可以在系统设置里打开 **实时字幕 / Live Caption**（设置 → 无障碍 → 听觉），播放听力时字幕会显示在屏幕上，再点悬浮球扫字幕即可。实时字幕英文效果通常比中文好，且有 1～2 秒延迟，建议放音前就打开。
+
+**Q：英语题正确率低？**  
+v1.5.0 起请先在首页把「识别语言」切成 **English**：以前用的是中文 OCR 模型，英文单词和选项字母容易认错；两栏英语卷也会因为左右栏被合成一行而串题。切到 English 后会使用拉丁模型、英语提示词，并自动把两栏切开按栏读取。另外英语阅读/完形建议在首页选 `deepseek-reasoner`。如果 OCR 原文本身缺选项（比如选项被弹窗挡住），模型只能猜，点「查看识屏文字」可以先核对。
+
+**Q：点「听一段」提示网络错误 / 没有识别服务？**  
+「听一段」用的是手机自带的语音识别服务，不经过 DeepSeek。部分国产 ROM 没有可用的识别服务，或服务需要联网但被限制，就会报网络错误。可以改用系统「实时字幕 / Live Caption」把音频转成屏幕文字后再扫，或者等后续版本接 OpenAI 兼容的转写接口。
 
 **Q：点悬浮球没反应？**  
 先看 App 首页「无障碍服务（截图）」是否为「已开启」。如果没有，按引导开启；如果显示「正在连接」，等 1~2 秒或关闭再重新开启无障碍。再把悬浮球拖到屏幕中间试一次，排除侧边返回手势。最后检查省电策略是否限制了 App。

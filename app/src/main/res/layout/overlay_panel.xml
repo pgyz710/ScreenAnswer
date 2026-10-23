@@ -98,6 +98,23 @@
     </com.screenanswer.app.overlay.MaxHeightScrollView>
 
     <TextView
+        android:id="@+id/listenButton"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:background="@drawable/bg_pill"
+        android:clickable="true"
+        android:focusable="true"
+        android:paddingStart="12dp"
+        android:paddingTop="7dp"
+        android:paddingEnd="12dp"
+        android:paddingBottom="7dp"
+        android:text="@string/listen"
+        android:textColor="@color/brand_light"
+        android:textSize="12sp"
+        android:visibility="gone" />
+
+    <TextView
         android:id="@+id/ocrToggle"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"

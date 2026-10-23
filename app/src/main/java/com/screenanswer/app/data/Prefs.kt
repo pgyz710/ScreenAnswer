@@ -38,6 +38,13 @@ class Prefs(context: Context) {
                 .apply()
         }
 
+    /** English mode: Latin OCR model, English-ish prompt contract and English speech input. */
+    var englishMode: Boolean
+        get() = sp.getBoolean(KEY_ENGLISH_MODE, false)
+        set(value) {
+            sp.edit().putBoolean(KEY_ENGLISH_MODE, value).apply()
+        }
+
     companion object {
         const val DEFAULT_BASE_URL = "https://api.deepseek.com"
         const val MODEL_CHAT = "deepseek-chat"
@@ -47,5 +54,6 @@ class Prefs(context: Context) {
         private const val KEY_API_KEY = "api_key"
         private const val KEY_BASE_URL = "base_url"
         private const val KEY_MODEL = "model"
+        private const val KEY_ENGLISH_MODE = "english_mode"
     }
 }

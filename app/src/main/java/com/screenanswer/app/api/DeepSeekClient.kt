@@ -34,7 +34,7 @@ class DeepSeekClient(private val prefs: Prefs) {
         .retryOnConnectionFailure(true)
         .build()
 
-    fun streamAnswer(ocrText: String): Flow<String> = flow {
+    fun streamAnswer(ocrText: String, english: Boolean = false): Flow<String> = flow {
         val apiKey = prefs.apiKey
         if (apiKey.isBlank()) {
             throw ApiException(401, "尚未配置 DeepSeek API Key")
@@ -49,8 +49,11 @@ class DeepSeekClient(private val prefs: Prefs) {
             put(
                 "messages",
                 JSONArray().apply {
-                    put(JSONObject().put("role", "system").put("content", Prompts.SYSTEM))
-                    put(JSONObject().put("role", "user").put("content", Prompts.userPrompt(ocrText)))
+                    put(JSONObject().put("role", "system").put("content", Prompts.system(english)))
+                    put(
+                        JSONObject().put("role", "user")
+                            .put("content", Prompts.userPrompt(ocrText, english))
+                    )
                 }
             )
         }

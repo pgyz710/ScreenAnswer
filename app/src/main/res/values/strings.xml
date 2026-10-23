@@ -13,6 +13,10 @@
     <string name="model_chat">deepseek-chat</string>
     <string name="model_reasoner">deepseek-reasoner</string>
     <string name="model_hint">chat 响应更快；reasoner 更擅长数学与推理题，耗时略长</string>
+    <string name="language_label">识别语言</string>
+    <string name="lang_chinese">中文</string>
+    <string name="lang_english">English</string>
+    <string name="language_hint">英语题选 English：换用英文 OCR 模型，并按英文题作答</string>
     <string name="advanced">高级设置</string>
     <string name="base_url_hint">API Base URL</string>
     <string name="base_url_helper">默认 https://api.deepseek.com，可改为兼容接口地址</string>
@@ -39,7 +43,7 @@
     <string name="section_usage">使用方式</string>
     <string name="usage_steps">1. 填入 API Key。\n2. 点「开启悬浮球」，允许悬浮窗权限。\n3. 点「无障碍服务」这一行，开启「识屏答题助手」。\n4. 回到任意 App，点击蓝色悬浮球：答案会直接显示在球旁边。\n5. 想看解析，再点一下悬浮球打开弹窗；长按悬浮球可重新识屏，双击隐藏。\n6. 试卷有多页时：打开弹窗点「加一页」→ 翻页 → 再点悬浮球，2、3 页会一起作答。\n7. 本版本不调用屏幕共享，截图只在本机做 OCR。</string>
     <string name="privacy_note">本版本不使用系统屏幕共享或录屏；通过无障碍服务在本机读取屏幕并做文字识别。截图和识别结果不会上传，只有识别出的文字会发送给 DeepSeek 生成答案。API Key 仅保存在本机。</string>
-    <string name="version_label">v1.4.0 · 支持多页收集</string>
+    <string name="version_label">v1.5.0 · 英语模式 + 语音听题</string>
 
     <string name="accessibility_service_label">识屏答题助手</string>
     <string name="accessibility_service_description">用于在本地读取屏幕并识别题目。截图不会上传，也不会开启屏幕共享或录屏。</string>
@@ -55,6 +59,13 @@
     <string name="retry">重答</string>
     <string name="rescan">重扫</string>
     <string name="add_page">加一页</string>
+    <string name="listen">听一段</string>
+    <string name="stop_listening">停止</string>
+    <string name="listening">正在听…</string>
+    <string name="listen_result_hint">听完后会自动加入本题</string>
+    <string name="listen_permission">需要麦克风权限。请回到 App 允许「录音」后再试。</string>
+    <string name="listen_unavailable">手机没有可用的语音识别服务，可以改用系统「实时字幕」再扫字幕。</string>
+    <string name="listen_empty">没有听清，请再点一次「听一段」。</string>
     <string name="next_page_hint">翻到下一页，点球继续</string>
     <string name="show_ocr">查看识屏文字</string>
     <string name="hide_ocr">收起识屏文字</string>

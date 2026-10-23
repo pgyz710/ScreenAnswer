@@ -54,6 +54,7 @@ class OverlayController(
     interface Listener {
         fun onScanRequested()
         fun onAddPageRequested()
+        fun onListenRequested()
         fun onRetryRequested()
         fun onPanelClosed()
         fun onHideBubble()
@@ -100,6 +101,7 @@ class OverlayController(
     private var ocrText: TextView? = null
     private var actionsRow: View? = null
     private var addPageButton: TextView? = null
+    private var listenButton: TextView? = null
     private var copyButton: TextView? = null
     private var retryButton: TextView? = null
     private var rescanButton: TextView? = null
@@ -111,6 +113,9 @@ class OverlayController(
     private var releasing = false
     private var positionPending = false
     private var capturing = false
+
+    /** Last short answer, so stopping speech input restores it instead of leaving "正在听…". */
+    private var lastAnswerPill = ""
 
     /** Set after the user taps 「加一页」: the next tap on the ball captures the next page. */
     private var awaitingAddPage = false
@@ -442,6 +447,7 @@ class OverlayController(
         answerText?.text = "正在生成…"
         actionsRow?.isVisible = false
         addPageButton?.isVisible = false
+        listenButton?.isVisible = false
         currentAnswer = ""
         scrollAnswerToBottom()
         schedulePosition()
@@ -458,15 +464,20 @@ class OverlayController(
         answerText?.text = MarkdownRenderer.render(raw)
         actionsRow?.isVisible = false
         addPageButton?.isVisible = false
+        listenButton?.isVisible = false
         currentAnswer = raw
         scrollAnswerToBottom()
         schedulePosition()
-        if (answerPart.isNotBlank()) setPillContentThrottled(answerPart)
+        if (answerPart.isNotBlank()) {
+            lastAnswerPill = answerPart
+            setPillContentThrottled(answerPart)
+        }
     }
 
     fun finishAnswer(raw: String, answer: String, explanation: String, pageCount: Int = 1) {
         working = false
         hasAnswer = answer.isNotBlank()
+        lastAnswerPill = answer
         setPillContent(if (hasAnswer) answer else "已生成")
 
         val panelBody = buildPanelBody(answer, explanation).ifBlank { raw.trim() }
@@ -480,6 +491,7 @@ class OverlayController(
         answerText?.text = MarkdownRenderer.render(panelBody)
         actionsRow?.isVisible = true
         addPageButton?.isVisible = true
+        listenButton?.isVisible = true
         copyButton?.isVisible = true
         retryButton?.isVisible = true
         rescanButton?.isVisible = true
@@ -514,6 +526,7 @@ class OverlayController(
         currentAnswer = ""
         actionsRow?.isVisible = true
         addPageButton?.isVisible = false
+        listenButton?.isVisible = true
         copyButton?.isVisible = false
         retryButton?.isVisible = allowRetry
         rescanButton?.isVisible = true
@@ -536,6 +549,7 @@ class OverlayController(
         currentAnswer = ""
         actionsRow?.isVisible = true
         addPageButton?.isVisible = false
+        listenButton?.isVisible = true
         copyButton?.isVisible = false
         retryButton?.isVisible = allowRetry
         rescanButton?.isVisible = true
@@ -546,6 +560,21 @@ class OverlayController(
     /** Shows the explanation panel with whatever was generated last (or the live progress). */
     fun openPanel() {
         if (showPanelWindow()) schedulePosition(0L)
+    }
+
+    /**
+     * Toggles the 「听一段」 state. While listening the answer pill shows the partial transcript;
+     * stopping restores the last answer.
+     */
+    fun setListening(listening: Boolean, partial: String = "") {
+        listenButton?.text = context.getString(
+            if (listening) R.string.stop_listening else R.string.listen
+        )
+        if (listening) {
+            setPillContent(partial.ifBlank { context.getString(R.string.listening) })
+        } else {
+            setPillContent(lastAnswerPill)
+        }
     }
 
     /**
@@ -649,6 +678,7 @@ class OverlayController(
         ocrText = root.findViewById(R.id.ocrText)
         actionsRow = root.findViewById(R.id.actionsRow)
         addPageButton = root.findViewById(R.id.addPageButton)
+        listenButton = root.findViewById(R.id.listenButton)
         copyButton = root.findViewById(R.id.copyButton)
         retryButton = root.findViewById(R.id.retryButton)
         rescanButton = root.findViewById(R.id.rescanButton)
@@ -657,6 +687,7 @@ class OverlayController(
         closeButton.setOnClickListener { hidePanel() }
 
         addPageButton?.setOnClickListener { requestAddPage() }
+        listenButton?.setOnClickListener { listener.onListenRequested() }
         copyButton?.setOnClickListener { copyAnswer() }
         retryButton?.setOnClickListener { listener.onRetryRequested() }
         rescanButton?.setOnClickListener { listener.onScanRequested() }

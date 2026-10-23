@@ -28,12 +28,21 @@ class MainActivity : AppCompatActivity() {
     private lateinit var prefs: Prefs
 
     private var actionAfterNotificationPermission: (() -> Unit)? = null
+    private var actionAfterMicPermission: (() -> Unit)? = null
 
     private val notificationPermissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestPermission()
     ) {
         val action = actionAfterNotificationPermission
         actionAfterNotificationPermission = null
+        action?.invoke()
+    }
+
+    private val micPermissionLauncher = registerForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) {
+        val action = actionAfterMicPermission
+        actionAfterMicPermission = null
         action?.invoke()
     }
 
@@ -58,6 +67,9 @@ class MainActivity : AppCompatActivity() {
 
         binding.modelChat.setOnClickListener { selectModel(Prefs.MODEL_CHAT) }
         binding.modelReasoner.setOnClickListener { selectModel(Prefs.MODEL_REASONER) }
+        selectLanguage(prefs.englishMode, persist = false)
+        binding.langChinese.setOnClickListener { selectLanguage(english = false) }
+        binding.langEnglish.setOnClickListener { selectLanguage(english = true) }
 
         var advancedOpen = false
         binding.advancedToggle.setOnClickListener {
@@ -116,6 +128,22 @@ class MainActivity : AppCompatActivity() {
         )
     }
 
+    private fun selectLanguage(english: Boolean, persist: Boolean = true) {
+        if (persist) prefs.englishMode = english
+        binding.langChinese.setBackgroundResource(
+            if (english) R.drawable.bg_pill else R.drawable.bg_pill_selected
+        )
+        binding.langChinese.setTextColor(
+            ContextCompat.getColor(this, if (english) R.color.text_secondary else R.color.white)
+        )
+        binding.langEnglish.setBackgroundResource(
+            if (english) R.drawable.bg_pill_selected else R.drawable.bg_pill
+        )
+        binding.langEnglish.setTextColor(
+            ContextCompat.getColor(this, if (english) R.color.white else R.color.text_secondary)
+        )
+    }
+
     private fun startFloating() {
         val key = binding.apiKeyInput.text?.toString().orEmpty().trim()
         if (key.isEmpty()) {
@@ -157,16 +185,32 @@ class MainActivity : AppCompatActivity() {
         }
 
         requestNotificationPermissionThen {
-            runCatching { ScreenAnswerService.start(this) }
-                .onFailure {
-                    Toast.makeText(
-                        this,
-                        "悬浮球启动失败：${it.message ?: "未知错误"}",
-                        Toast.LENGTH_LONG
-                    ).show()
-                }
-            binding.statusHint.text = "悬浮球已开启，回到桌面点击它即可识屏"
-            binding.root.postDelayed({ updateUi() }, 350L)
+            requestMicPermissionThen {
+                runCatching { ScreenAnswerService.start(this) }
+                    .onFailure {
+                        Toast.makeText(
+                            this,
+                            "悬浮球启动失败：${it.message ?: "未知错误"}",
+                            Toast.LENGTH_LONG
+                        ).show()
+                    }
+                binding.statusHint.text = "悬浮球已开启，回到桌面点击它即可识屏"
+                binding.root.postDelayed({ updateUi() }, 350L)
+            }
+        }
+    }
+
+    /** The mic is only used by the optional 「听一段」 speech input. */
+    private fun requestMicPermissionThen(action: () -> Unit) {
+        val granted = ContextCompat.checkSelfPermission(
+            this,
+            Manifest.permission.RECORD_AUDIO
+        ) == PackageManager.PERMISSION_GRANTED
+        if (granted) {
+            action()
+        } else {
+            actionAfterMicPermission = action
+            micPermissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
         }
     }
 
