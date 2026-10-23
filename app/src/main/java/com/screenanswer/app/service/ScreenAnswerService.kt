@@ -55,7 +55,9 @@ class ScreenAnswerService : Service(), OverlayController.Listener {
     private var started = false
     private var released = false
     private var isWorking = false
-    private var lastOcrText: String? = null
+
+    /** OCR text for each captured screen, in order. Cleared when a fresh scan starts. */
+    private val pages = mutableListOf<String>()
 
     override fun onCreate() {
         super.onCreate()
@@ -112,10 +114,37 @@ class ScreenAnswerService : Service(), OverlayController.Listener {
             Toast.makeText(this, "正在识屏，请稍候…", Toast.LENGTH_SHORT).show()
             return
         }
-        if (prefs.apiKey.isBlank()) {
-            overlay.showError("还没有配置 DeepSeek API Key，请回到 App 填写后再试", allowRetry = false)
+        if (!checkConfig()) return
+        val reader = connectedReader() ?: return
+        pages.clear()
+        captureAndAnswer(reader, append = false)
+    }
+
+    override fun onAddPageRequested() {
+        if (released) return
+        if (isWorking) {
+            Toast.makeText(this, "正在识屏，请稍候…", Toast.LENGTH_SHORT).show()
             return
         }
+        if (pages.isEmpty()) {
+            // Nothing collected yet: behave like a normal first scan.
+            onScanRequested()
+            return
+        }
+        if (!checkConfig()) return
+        val reader = connectedReader() ?: return
+        captureAndAnswer(reader, append = true)
+    }
+
+    private fun checkConfig(): Boolean {
+        if (prefs.apiKey.isBlank()) {
+            overlay.showError("还没有配置 DeepSeek API Key，请回到 App 填写后再试", allowRetry = false)
+            return false
+        }
+        return true
+    }
+
+    private fun connectedReader(): ScreenReaderService? {
         val reader = ScreenReaderService.instance
         if (reader == null) {
             overlay.showError(
@@ -123,10 +152,17 @@ class ScreenAnswerService : Service(), OverlayController.Listener {
                     "然后回到 App 重新点「开启悬浮球」。",
                 allowRetry = false
             )
-            return
         }
+        return reader
+    }
 
-        lastOcrText = null
+    /**
+     * Capture the current screen, OCR it, and ask DeepSeek.
+     *
+     * @param append true for 「加一页」: keep the pages collected so far and add this screen to
+     *   them, so a multi-page paper is answered in one request.
+     */
+    private fun captureAndAnswer(reader: ScreenReaderService, append: Boolean) {
         beginWork()
         answerJob = scope.launch {
             var bitmap: Bitmap? = null
@@ -144,17 +180,22 @@ class ScreenAnswerService : Service(), OverlayController.Listener {
 
                 if (text.isBlank()) {
                     overlay.showInfo(
-                        "屏幕上没有识别到文字。请让题目完整显示在屏幕上，再点「重扫」。",
-                        allowRetry = false
+                        if (append) {
+                            "这一页没有识别到文字。可以再点一次球重试，或点「重扫」重新开始。"
+                        } else {
+                            "屏幕上没有识别到文字。请让题目完整显示在屏幕上，再点「重扫」。"
+                        },
+                        allowRetry = pages.isNotEmpty()
                     )
                     return@launch
                 }
-                lastOcrText = text
-                askDeepSeek(text)
+                if (!append) pages.clear()
+                pages.add(text)
+                askDeepSeek()
             } catch (cancel: CancellationException) {
                 throw cancel
             } catch (t: Throwable) {
-                overlay.showError(friendlyMessage(t), allowRetry = lastOcrText != null)
+                overlay.showError(friendlyMessage(t), allowRetry = pages.isNotEmpty())
             } finally {
                 bitmap?.let { runCatching { it.recycle() } }
                 overlay.restoreAfterCapture()
@@ -165,15 +206,14 @@ class ScreenAnswerService : Service(), OverlayController.Listener {
 
     override fun onRetryRequested() {
         if (isWorking || released) return
-        val text = lastOcrText
-        if (text.isNullOrBlank()) {
+        if (pages.isEmpty()) {
             onScanRequested()
             return
         }
         beginWork()
         answerJob = scope.launch {
             try {
-                askDeepSeek(text)
+                askDeepSeek()
             } catch (cancel: CancellationException) {
                 throw cancel
             } catch (t: Throwable) {
@@ -197,9 +237,10 @@ class ScreenAnswerService : Service(), OverlayController.Listener {
         // 隐藏时不再弹 Toast：恢复入口在通知栏和 App 里，避免遮挡屏幕底部。
     }
 
-    private suspend fun askDeepSeek(text: String) {
-        val clipped = if (text.length > MAX_OCR_CHARS) text.take(MAX_OCR_CHARS) else text
-        overlay.showThinking(preview = text)
+    private suspend fun askDeepSeek() {
+        val joined = joinPages()
+        val clipped = if (joined.length > MAX_OCR_CHARS) joined.take(MAX_OCR_CHARS) else joined
+        overlay.showThinking(preview = pages.lastOrNull().orEmpty(), fullOcr = joined)
 
         val buffer = StringBuilder()
         client.streamAnswer(clipped).collect { delta ->
@@ -214,7 +255,15 @@ class ScreenAnswerService : Service(), OverlayController.Listener {
             return
         }
         val parsed = AnswerParser.parse(raw)
-        overlay.finishAnswer(raw, parsed.answer, parsed.explanation)
+        overlay.finishAnswer(raw, parsed.answer, parsed.explanation, pages.size)
+    }
+
+    /** Pages are joined with visible markers so the model can answer by page / question number. */
+    private fun joinPages(): String {
+        if (pages.size <= 1) return pages.firstOrNull().orEmpty()
+        return pages.mapIndexed { index, page ->
+            "--- 第 ${index + 1} 页 ---\n$page"
+        }.joinToString("\n\n")
     }
 
     private fun beginWork() {
@@ -319,7 +368,7 @@ class ScreenAnswerService : Service(), OverlayController.Listener {
         return NotificationCompat.Builder(this, CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_notification)
             .setContentTitle("识屏答题助手")
-            .setContentText("点悬浮球看答案，再点一次看解析；双击隐藏")
+            .setContentText("点球看答案，再点看解析；多页试卷可「加一页」")
             .setContentIntent(openIntent)
             .setOngoing(true)
             .setSilent(true)
@@ -349,7 +398,7 @@ class ScreenAnswerService : Service(), OverlayController.Listener {
 
         private const val CHANNEL_ID = "screen_answer_service"
         private const val NOTIFICATION_ID = 42
-        private const val MAX_OCR_CHARS = 8000
+        private const val MAX_OCR_CHARS = 20000
 
         @Volatile
         var isRunning: Boolean = false

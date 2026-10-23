@@ -37,9 +37,9 @@
     <string name="stop_button">停止悬浮窗</string>
 
     <string name="section_usage">使用方式</string>
-    <string name="usage_steps">1. 填入 API Key。\n2. 点「开启悬浮球」，允许悬浮窗权限。\n3. 点「无障碍服务」这一行，开启「识屏答题助手」。\n4. 回到任意 App，点击蓝色悬浮球：答案会直接显示在球旁边。\n5. 想看解析，再点一下悬浮球打开弹窗；长按悬浮球可重新识屏，双击隐藏。\n6. 本版本不调用屏幕共享，截图只在本机做 OCR。</string>
+    <string name="usage_steps">1. 填入 API Key。\n2. 点「开启悬浮球」，允许悬浮窗权限。\n3. 点「无障碍服务」这一行，开启「识屏答题助手」。\n4. 回到任意 App，点击蓝色悬浮球：答案会直接显示在球旁边。\n5. 想看解析，再点一下悬浮球打开弹窗；长按悬浮球可重新识屏，双击隐藏。\n6. 试卷有多页时：打开弹窗点「加一页」→ 翻页 → 再点悬浮球，2、3 页会一起作答。\n7. 本版本不调用屏幕共享，截图只在本机做 OCR。</string>
     <string name="privacy_note">本版本不使用系统屏幕共享或录屏；通过无障碍服务在本机读取屏幕并做文字识别。截图和识别结果不会上传，只有识别出的文字会发送给 DeepSeek 生成答案。API Key 仅保存在本机。</string>
-    <string name="version_label">v1.3.0 · 答案在球上，解析看弹窗</string>
+    <string name="version_label">v1.4.0 · 支持多页收集</string>
 
     <string name="accessibility_service_label">识屏答题助手</string>
     <string name="accessibility_service_description">用于在本地读取屏幕并识别题目。截图不会上传，也不会开启屏幕共享或录屏。</string>
@@ -54,6 +54,8 @@
     <string name="copy">复制</string>
     <string name="retry">重答</string>
     <string name="rescan">重扫</string>
+    <string name="add_page">加一页</string>
+    <string name="next_page_hint">翻到下一页，点球继续</string>
     <string name="show_ocr">查看识屏文字</string>
     <string name="hide_ocr">收起识屏文字</string>
     <string name="close">关闭</string>

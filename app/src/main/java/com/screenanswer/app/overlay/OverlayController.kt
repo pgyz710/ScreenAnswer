@@ -53,6 +53,7 @@ class OverlayController(
 
     interface Listener {
         fun onScanRequested()
+        fun onAddPageRequested()
         fun onRetryRequested()
         fun onPanelClosed()
         fun onHideBubble()
@@ -98,6 +99,7 @@ class OverlayController(
     private var ocrScroll: MaxHeightScrollView? = null
     private var ocrText: TextView? = null
     private var actionsRow: View? = null
+    private var addPageButton: TextView? = null
     private var copyButton: TextView? = null
     private var retryButton: TextView? = null
     private var rescanButton: TextView? = null
@@ -109,6 +111,9 @@ class OverlayController(
     private var releasing = false
     private var positionPending = false
     private var capturing = false
+
+    /** Set after the user taps 「加一页」: the next tap on the ball captures the next page. */
+    private var awaitingAddPage = false
 
     /** A scan/request is running: tapping the ball should show progress instead of starting over. */
     private var working = false
@@ -169,6 +174,7 @@ class OverlayController(
     fun hideBubble() {
         if (!bubbleAdded) return
         bubbleHidden = true
+        awaitingAddPage = false
         hidePanel()
         bubbleRoot?.visibility = View.GONE
         pillRoot?.visibility = View.GONE
@@ -203,6 +209,11 @@ class OverlayController(
                         view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
                         playTapAnimation(view)
                         when {
+                            // 「加一页」was requested: this tap captures the next page.
+                            awaitingAddPage -> {
+                                awaitingAddPage = false
+                                listener.onAddPageRequested()
+                            }
                             // The explanation is open: the same tap folds it back.
                             panelVisible -> hidePanel()
                             // An answer exists (or is being generated): show the explanation.
@@ -217,6 +228,7 @@ class OverlayController(
                     if (dragging) return
                     // Long press always starts a fresh scan, so the same ball can be reused
                     // after the question changed without opening the panel first.
+                    awaitingAddPage = false
                     view.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS)
                     playTapAnimation(view)
                     listener.onScanRequested()
@@ -224,6 +236,7 @@ class OverlayController(
 
                 override fun onDoubleTap(e: MotionEvent): Boolean {
                     if (!dragging) {
+                        awaitingAddPage = false
                         view.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS)
                         listener.onHideBubble()
                     }
@@ -407,20 +420,20 @@ class OverlayController(
         renderLoading("正在识别屏幕文字…", "")
     }
 
-    fun showThinking(preview: String) {
+    fun showThinking(preview: String, fullOcr: String = preview) {
         working = true
         hasAnswer = false
         setPillContent(PILL_THINKING)
-        renderLoading("正在思考…", preview)
+        renderLoading("正在思考…", preview, fullOcr)
     }
 
-    private fun renderLoading(status: String, preview: String) {
+    private fun renderLoading(status: String, preview: String, fullOcr: String = preview) {
         ensurePanel()
         progressBar?.isVisible = true
         statusText?.text = status
         setDotColor(R.color.brand_light)
-        if (preview.isNotBlank()) {
-            setPreview(preview)
+        if (preview.isNotBlank() || fullOcr.isNotBlank()) {
+            setPreview(preview, fullOcr)
         } else {
             clearPreview()
         }
@@ -428,6 +441,7 @@ class OverlayController(
         answerText?.setTextColor(color(R.color.text_muted))
         answerText?.text = "正在生成…"
         actionsRow?.isVisible = false
+        addPageButton?.isVisible = false
         currentAnswer = ""
         scrollAnswerToBottom()
         schedulePosition()
@@ -443,13 +457,14 @@ class OverlayController(
         answerText?.setTextColor(color(R.color.text_primary))
         answerText?.text = MarkdownRenderer.render(raw)
         actionsRow?.isVisible = false
+        addPageButton?.isVisible = false
         currentAnswer = raw
         scrollAnswerToBottom()
         schedulePosition()
         if (answerPart.isNotBlank()) setPillContentThrottled(answerPart)
     }
 
-    fun finishAnswer(raw: String, answer: String, explanation: String) {
+    fun finishAnswer(raw: String, answer: String, explanation: String, pageCount: Int = 1) {
         working = false
         hasAnswer = answer.isNotBlank()
         setPillContent(if (hasAnswer) answer else "已生成")
@@ -458,12 +473,13 @@ class OverlayController(
         currentAnswer = panelBody
         ensurePanel()
         progressBar?.isVisible = false
-        statusText?.text = "已完成"
+        statusText?.text = if (pageCount > 1) "已完成 · $pageCount 页" else "已完成"
         setDotColor(R.color.success)
         answerScroll?.isVisible = true
         answerText?.setTextColor(color(R.color.text_primary))
         answerText?.text = MarkdownRenderer.render(panelBody)
         actionsRow?.isVisible = true
+        addPageButton?.isVisible = true
         copyButton?.isVisible = true
         retryButton?.isVisible = true
         rescanButton?.isVisible = true
@@ -486,6 +502,7 @@ class OverlayController(
     fun showInfo(message: String, allowRetry: Boolean) {
         working = false
         hasAnswer = false
+        awaitingAddPage = false
         setPillContent("")
         if (!showPanelWindow()) return
         progressBar?.isVisible = false
@@ -496,6 +513,7 @@ class OverlayController(
         answerText?.text = message
         currentAnswer = ""
         actionsRow?.isVisible = true
+        addPageButton?.isVisible = false
         copyButton?.isVisible = false
         retryButton?.isVisible = allowRetry
         rescanButton?.isVisible = true
@@ -506,6 +524,7 @@ class OverlayController(
     fun showError(message: String, allowRetry: Boolean) {
         working = false
         hasAnswer = false
+        awaitingAddPage = false
         setPillContent("")
         if (!showPanelWindow()) return
         progressBar?.isVisible = false
@@ -516,6 +535,7 @@ class OverlayController(
         answerText?.text = message
         currentAnswer = ""
         actionsRow?.isVisible = true
+        addPageButton?.isVisible = false
         copyButton?.isVisible = false
         retryButton?.isVisible = allowRetry
         rescanButton?.isVisible = true
@@ -526,6 +546,16 @@ class OverlayController(
     /** Shows the explanation panel with whatever was generated last (or the live progress). */
     fun openPanel() {
         if (showPanelWindow()) schedulePosition(0L)
+    }
+
+    /**
+     * 「加一页」：fold the panel, remember that the next tap on the ball should capture another
+     * page, and show the hint in the answer pill.
+     */
+    private fun requestAddPage() {
+        awaitingAddPage = true
+        hidePanel()
+        setPillContent(context.getString(R.string.next_page_hint))
     }
 
     fun isPanelVisible(): Boolean = panelVisible
@@ -618,6 +648,7 @@ class OverlayController(
         ocrScroll = root.findViewById(R.id.ocrScroll)
         ocrText = root.findViewById(R.id.ocrText)
         actionsRow = root.findViewById(R.id.actionsRow)
+        addPageButton = root.findViewById(R.id.addPageButton)
         copyButton = root.findViewById(R.id.copyButton)
         retryButton = root.findViewById(R.id.retryButton)
         rescanButton = root.findViewById(R.id.rescanButton)
@@ -625,6 +656,7 @@ class OverlayController(
         val closeButton = root.findViewById<ImageButton>(R.id.closeButton)
         closeButton.setOnClickListener { hidePanel() }
 
+        addPageButton?.setOnClickListener { requestAddPage() }
         copyButton?.setOnClickListener { copyAnswer() }
         retryButton?.setOnClickListener { listener.onRetryRequested() }
         rescanButton?.setOnClickListener { listener.onScanRequested() }
@@ -647,8 +679,8 @@ class OverlayController(
         ocrScroll?.maxHeight = dp(90)
     }
 
-    private fun setPreview(text: String) {
-        currentOcrText = text
+    private fun setPreview(text: String, fullOcr: String = text) {
+        currentOcrText = fullOcr
         val snippet = text.lineSequence()
             .map { it.trim() }
             .filter { it.isNotEmpty() }
@@ -656,7 +688,7 @@ class OverlayController(
             .joinToString(" ")
         previewText?.text = snippet
         previewText?.isVisible = snippet.isNotBlank()
-        ocrToggle?.isVisible = text.isNotBlank()
+        ocrToggle?.isVisible = fullOcr.isNotBlank()
         updateOcrViews()
     }
 
@@ -831,6 +863,7 @@ class OverlayController(
         bubbleHidden = false
         working = false
         hasAnswer = false
+        awaitingAddPage = false
     }
 
     private companion object {
