@@ -1,4 +1,4 @@
-# 识屏答题助手（ScreenAnswer）v1.5.0
+# 识屏答题助手（ScreenAnswer）v1.5.1
 
 [![Build debug APK](https://github.com/pgyz710/ScreenAnswer/actions/workflows/build-apk.yml/badge.svg)](https://github.com/pgyz710/ScreenAnswer/actions/workflows/build-apk.yml)
 
@@ -16,8 +16,14 @@
 
 ## 下载 / 安装
 
-- 最新安装包：[Releases · v1.5.0](https://github.com/pgyz710/ScreenAnswer/releases/tag/v1.5.0)
+- 最新安装包：[Releases · v1.5.1](https://github.com/pgyz710/ScreenAnswer/releases/tag/v1.5.1)
 - 自己构建：[GitHub Actions](https://github.com/pgyz710/ScreenAnswer/actions/workflows/build-apk.yml) 的 Artifacts，或本地 `./gradlew assembleDebug`
+
+## v1.5.1 更新
+
+- **英语题改为「答案英文 + 解析中文」**：`Answer:` 段保持英文（选项字母 + 英文选项原文），`Explanation:` 段用中文讲清楚原因，方便对照着看。
+- 原来的「同语言作答」规则移除；英语模式下不再整段英文解析。
+- 只影响英语模式，中文模式不变。
 
 ## v1.5.0 更新
 
@@ -143,7 +149,7 @@ Android 11 及以上提供 `AccessibilityService.takeScreenshot()`：在用户�
 
 仓库不提交编译产物（APK 约 56 MB）。有三种方式拿到安装包：
 
-1. **Releases**：直接下载 [ScreenAnswer-v1.5.0-debug.apk](https://github.com/pgyz710/ScreenAnswer/releases/download/v1.5.0/ScreenAnswer-v1.5.0-debug.apk)。
+1. **Releases**：直接下载 [ScreenAnswer-v1.5.1-debug.apk](https://github.com/pgyz710/ScreenAnswer/releases/download/v1.5.1/ScreenAnswer-v1.5.1-debug.apk)。
 2. **GitHub Actions**：推送到 `main`/`master` 后，在仓库的 [Actions](https://github.com/pgyz710/ScreenAnswer/actions/workflows/build-apk.yml) →「Build debug APK」→ Artifacts 里下载 `ScreenAnswer-debug`。
 3. **本地构建**：按下面的命令编译，产物在 `app/build/outputs/apk/debug/app-debug.apk`。
 
